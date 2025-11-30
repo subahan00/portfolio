@@ -172,18 +172,18 @@ const About = () => {
           >
             {/* Replace this block with your actual image when ready */}
             <div className="absolute inset-0 overflow-hidden rounded-2xl">
-              {/* Example:
+             
               <img
-                src="/images/subahan.jpg"
+                src="/image.png"
                 alt="Subahan Mulla"
                 className="w-full h-full object-cover object-center"
               />
-              */}
-              <div className="w-full h-full flex items-center justify-center bg-[#111119]">
+             
+              {/* <div className="w-full h-full flex items-center justify-center bg-[#111119]">
                 <span className="font-mono text-[#00FFFF]/25 text-3xl md:text-4xl font-bold -rotate-90 tracking-[0.4em]">
                   SUBAHAN_MULLA
                 </span>
-              </div>
+              </div> */}
             </div>
 
             <div className="absolute bottom-6 left-6 z-20">
