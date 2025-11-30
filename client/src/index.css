@@ -1,0 +1,37 @@
+/* client/src/index.css */
+
+/* 1. Import fonts at the very top (This is the fix) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Manrope:wght@700;800&display=swap');
+
+/* 2. This is the new "all-in-one" import */
+@import "tailwindcss";
+
+/* 3. This is your new "config file" */
+@theme {
+  /* --- Your "Kinetic Dark" Theme --- */
+  --color-bg-dark: #0A0E1A;
+  --color-bg-light: #111119;
+  --color-text-primary: #E0E0E0;
+  --color-text-secondary: #888899;
+  --color-accent: #00FFFF;
+  --color-accent-hover: #9FFFFF;
+
+  /* --- Your Fonts --- */
+  --font-heading: 'Manrope', sans-serif;
+  --font-body: 'Inter', sans-serif;
+
+  /* --- Your Custom Glow Shadow --- */
+  --shadow-accent: 0 4px 15px rgba(0, 255, 255, 0.2);
+}
+
+/* 4. Apply your base styles */
+@layer base {
+  body {
+    /* These classes NOW work because they are defined above */
+    @apply bg-bg-dark text-text-primary font-body;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
+  }
+}

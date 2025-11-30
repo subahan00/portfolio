@@ -1,0 +1,78 @@
+/* client/src/index.css */
+
+/* --- 1. Font Imports --- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Manrope:wght@700;800&display=swap');
+
+/* --- 2. CSS Variables (Our Theme) --- */
+:root {
+  /* Core Palette */
+  --color-bg-dark: #0A0E1A;      /* Midnight Cobalt */
+  --color-bg-light: #111119;     /* Deep Space (for cards/modals) */
+  --color-text-primary: #E0E0E0;   /* Cloud */
+  --color-text-secondary: #888899; /* Grey */
+
+  /* Accent (Enthusiastic & Cool) */
+  --color-accent: #00FFFF;        /* Electric Cyan */
+  --color-accent-hover: #9FFFFF;    /* Lighter Cyan for hover */
+
+  /* Typography */
+  --font-heading: 'Manrope', sans-serif;
+  --font-body: 'Inter', sans-serif;
+
+  /* Other */
+  --border-radius: 8px;
+}
+
+/* --- 3. Global Resets & Base Styles --- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  /* For smooth scrolling */
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-bg-dark);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  line-height: 1.6;
+  
+  /* This will hide horizontal scrollbars if our animations ever "peek" out */
+  overflow-x: hidden; 
+}
+
+/* --- 4. Typography Base --- */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: 0.75rem;
+}
+
+h1 { font-size: 3rem; }
+h2 { font-size: 2.25rem; }
+h3 { font-size: 1.75rem; }
+
+p {
+  color: var(--color-text-secondary);
+  margin-bottom: 1rem;
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  color: var(--color-accent-hover);
+}
+
+/* --- 5. Utility Class (for testing) --- */
+.accent-text {
+  color: var(--color-accent);
+}
