@@ -103,8 +103,8 @@ const Projects = () => {
         'Responsive public UI with animated sections and themed wallpapers hosted via Cloudinary.',
       ],
       links: {
-        github: 'https://github.com/your-username/official_90', // replace
-        live: '#',
+        github: 'https://github.com/subahan00/new_tournament_management', // replace
+        live: 'https://official90.vercel.app/',
       },
     },
     {
@@ -123,7 +123,7 @@ const Projects = () => {
         'Clean, responsive frontend interface focused on readability and simple navigation.',
       ],
       links: {
-        github: 'https://github.com/your-username/news-app', // replace
+        github: 'https://github.com/subahan00/MERN_Project', // replace
         live: '#',
       },
     },
