@@ -1,151 +1,5 @@
-import React, { useRef, useState, useEffect, useMemo } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import React, { useRef, useState, useEffect } from 'react';
 import { motion, useMotionValue, useSpring } from 'framer-motion';
-import * as THREE from 'three';
-
-const NeuralCoreScene = ({ mouseX, mouseY }) => {
-  const networkRef = useRef();
-  const coreRef = useRef();
-  const glowRef = useRef();
-  const particlesRef = useRef();
-  
-  const particles = useMemo(() => {
-    const temp = [];
-    const particleCount = 150;
-    for (let i = 0; i < particleCount; i++) {
-      const angle = (i / particleCount) * Math.PI * 2;
-      const radius = 6 + Math.random() * 3;
-      const x = Math.cos(angle) * radius;
-      const y = (Math.random() - 0.5) * 5;
-      const z = Math.sin(angle) * radius;
-      temp.push({ 
-        x, y, z, angle, radius, 
-        speed: 0.15 + Math.random() * 0.25,
-        size: 0.08 + Math.random() * 0.15,
-        phase: Math.random() * Math.PI * 2
-      });
-    }
-    return temp;
-  }, []);
-
-  useFrame((state, delta) => {
-    const time = state.clock.elapsedTime;
-    
-    if (networkRef.current) {
-      networkRef.current.rotation.x += delta * 0.12;
-      networkRef.current.rotation.y += delta * 0.18;
-      networkRef.current.rotation.z = Math.sin(time * 0.3) * 0.1;
-      
-      const targetX = (mouseX - 0.5) * 0.8;
-      const targetY = (mouseY - 0.5) * 0.8;
-      networkRef.current.position.x += (targetX - networkRef.current.position.x) * 0.08;
-      networkRef.current.position.y += (targetY - networkRef.current.position.y) * 0.08;
-    }
-    
-    if (coreRef.current) {
-      coreRef.current.rotation.x = time * 0.15;
-      coreRef.current.rotation.y = time * 0.2;
-      coreRef.current.rotation.z = Math.sin(time * 0.5) * 0.3;
-      
-      const pulse1 = (Math.sin(time * 2.5) + 1) * 0.5;
-      const pulse2 = (Math.sin(time * 4) + 1) * 0.25;
-      coreRef.current.material.emissiveIntensity = 1.5 + pulse1 * 2 + pulse2;
-      
-      const scalePulse = 1 + Math.sin(time * 3) * 0.05;
-      coreRef.current.scale.setScalar(scalePulse);
-    }
-
-    if (glowRef.current) {
-      const pulse = Math.sin(time * 1.8) * 0.15 + 1.1;
-      glowRef.current.scale.setScalar(pulse);
-      glowRef.current.rotation.x = -networkRef.current.rotation.x * 0.5;
-      glowRef.current.rotation.y = -networkRef.current.rotation.y * 0.5;
-      glowRef.current.material.opacity = 0.15 + Math.sin(time * 2) * 0.05;
-    }
-    
-    if (particlesRef.current) {
-      const positions = particlesRef.current.geometry.attributes.position.array;
-      const sizes = particlesRef.current.geometry.attributes.size.array;
-      
-      particles.forEach((particle, i) => {
-        particle.angle += delta * particle.speed;
-        const wave = Math.sin(time * 2 + particle.phase) * 0.5;
-        
-        positions[i * 3] = Math.cos(particle.angle) * (particle.radius + wave * 0.3);
-        positions[i * 3 + 1] = particle.y + Math.sin(time * 1.5 + i * 0.1) * 0.6;
-        positions[i * 3 + 2] = Math.sin(particle.angle) * (particle.radius + wave * 0.3);
-        
-        sizes[i] = particle.size * (1 + Math.sin(time * 3 + particle.phase) * 0.3);
-      });
-      
-      particlesRef.current.geometry.attributes.position.needsUpdate = true;
-      particlesRef.current.geometry.attributes.size.needsUpdate = true;
-    }
-  });
-
-  const particlePositions = useMemo(() => {
-    const positions = new Float32Array(particles.length * 3);
-    particles.forEach((particle, i) => {
-      positions[i * 3] = particle.x;
-      positions[i * 3 + 1] = particle.y;
-      positions[i * 3 + 2] = particle.z;
-    });
-    return positions;
-  }, [particles]);
-  
-  const particleSizes = useMemo(() => {
-    const sizes = new Float32Array(particles.length);
-    particles.forEach((particle, i) => {
-      sizes[i] = particle.size;
-    });
-    return sizes;
-  }, [particles]);
-
-  return (
-    <>
-      <points ref={particlesRef}>
-        <bufferGeometry>
-          <bufferAttribute attach="attributes-position" count={particles.length} array={particlePositions} itemSize={3} />
-          <bufferAttribute attach="attributes-size" count={particles.length} array={particleSizes} itemSize={1} />
-        </bufferGeometry>
-        <pointsMaterial size={0.15} color="#00FFFF" transparent opacity={0.8} sizeAttenuation blending={THREE.AdditiveBlending} />
-      </points>
-      <mesh ref={glowRef}>
-        <icosahedronGeometry args={[3.5, 1]} />
-        <meshBasicMaterial color="#00FFFF" transparent opacity={0.15} />
-      </mesh>
-      <mesh>
-        <icosahedronGeometry args={[4, 1]} />
-        <meshBasicMaterial color="#9FFFFF" transparent opacity={0.08} />
-      </mesh>
-      <mesh ref={networkRef}>
-        <icosahedronGeometry args={[3, 2]} />
-        <meshStandardMaterial color="#00FFFF" wireframe emissive="#00FFFF" emissiveIntensity={0.8} />
-      </mesh>
-      <mesh ref={coreRef}>
-        <icosahedronGeometry args={[2.3, 2]} />
-        <meshStandardMaterial
-          color="#CCFFFF"
-          transparent
-          opacity={0.9}
-          roughness={0.2}
-          metalness={0.9}
-          emissive="#00FFFF"
-          emissiveIntensity={1.5}
-        />
-      </mesh>
-      <mesh>
-        <icosahedronGeometry args={[1.8, 1]} />
-        <meshStandardMaterial color="#FFFFFF" transparent opacity={0.4} emissive="#FFFFFF" emissiveIntensity={2} />
-      </mesh>
-      <pointLight position={[5, 5, 5]} intensity={1.5} color="#00FFFF" distance={20} />
-      <pointLight position={[-5, -5, 5]} intensity={0.8} color="#9FFFFF" distance={15} />
-      <pointLight position={[0, 8, -5]} intensity={1} color="#FFFFFF" distance={18} />
-      <spotLight position={[0, 10, 0]} angle={0.3} penumbra={1} intensity={0.5} color="#00FFFF" castShadow />
-    </>
-  );
-};
 
 const FloatingParticles = () => (
   <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -186,7 +40,6 @@ const GlitchText = ({ children, className }) => (
   </div>
 );
 
-// Magnetic button – now ONLY handles onClick, no href bug
 const MagneticButton = ({ children, className, onClick }) => {
   const ref = useRef(null);
   const x = useMotionValue(0);
@@ -203,10 +56,6 @@ const MagneticButton = ({ children, className, onClick }) => {
     y.set((e.clientY - centerY) * 0.3);
   };
 
-  const handleClick = () => {
-    if (onClick) onClick();
-  };
-
   return (
     <motion.button
       ref={ref}
@@ -216,7 +65,7 @@ const MagneticButton = ({ children, className, onClick }) => {
         x.set(0);
         y.set(0);
       }}
-      onClick={handleClick}
+      onClick={onClick}
       className={className}
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
@@ -230,7 +79,6 @@ const Hero = () => {
   const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
   const containerRef = useRef(null);
 
-  // smooth scroll helper
   const scrollToSection = (id) => {
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -256,7 +104,6 @@ const Hero = () => {
       className="relative min-h-screen w-full overflow-hidden"
       style={{ background: 'linear-gradient(to bottom, #0A0E1A 0%, #111119 100%)' }}
     >
-      {/* grid + particles background */}
       <div
         className="absolute inset-0 opacity-30"
         style={{
@@ -270,10 +117,7 @@ const Hero = () => {
       />
       <FloatingParticles />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] rounded-full opacity-30 blur-3xl" style={{ background: 'radial-gradient(circle, rgba(0, 255, 255, 0.5) 0%, rgba(159, 255, 255, 0.3) 40%, transparent 70%)', animation: 'breathe 8s ease-in-out infinite' }} />
-      <div className="absolute top-1/3 right-1/4 w-[600px] h-[600px] rounded-full opacity-20 blur-3xl" style={{ background: 'radial-gradient(circle, rgba(159, 255, 255, 0.4) 0%, transparent 60%)', animation: 'float 12s ease-in-out infinite' }} />
-      <div className="absolute bottom-1/4 left-1/4 w-[500px] h-[500px] rounded-full opacity-15 blur-3xl" style={{ background: 'radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%)', animation: 'float 10s ease-in-out infinite reverse' }} />
 
-      {/* TOP BAR: left = portfolio label, right = open to opportunities */}
       <div className="relative z-20">
         <div className="container mx-auto px-6 pt-6 flex items-center justify-between">
           <div className="flex items-baseline gap-3">
@@ -295,40 +139,27 @@ const Hero = () => {
             style={{
               borderColor: 'rgba(0, 255, 255, 0.4)',
               backgroundColor: 'rgba(0, 255, 255, 0.08)',
-              boxShadow:
-                '0 0 20px rgba(0, 255, 255, 0.2), inset 0 0 20px rgba(0, 255, 255, 0.05)',
+              boxShadow: '0 0 20px rgba(0, 255, 255, 0.2), inset 0 0 20px rgba(0, 255, 255, 0.05)',
             }}
           >
             <div
               className="absolute inset-0 bg-gradient-to-r from-transparent to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"
               style={{
-                background:
-                  'linear-gradient(to right, transparent, rgba(0, 255, 255, 0.1), transparent)',
+                background: 'linear-gradient(to right, transparent, rgba(0, 255, 255, 0.1), transparent)',
               }}
             />
-            <span
-              className="w-2 h-2 rounded-full relative z-10"
-              style={{ backgroundColor: '#00FFFF' }}
-            >
-              <span
-                className="absolute inset-0 rounded-full animate-ping"
-                style={{ backgroundColor: '#00FFFF' }}
-              />
+            <span className="w-2 h-2 rounded-full relative z-10" style={{ backgroundColor: '#00FFFF' }}>
+              <span className="absolute inset-0 rounded-full animate-ping" style={{ backgroundColor: '#00FFFF' }} />
             </span>
-            <span
-              className="text-sm font-semibold tracking-wide relative z-10"
-              style={{ color: '#00FFFF' }}
-            >
+            <span className="text-sm font-semibold tracking-wide relative z-10" style={{ color: '#00FFFF' }}>
               Open to Opportunities
             </span>
           </motion.div>
         </div>
       </div>
 
-      {/* Main hero content */}
       <div className="relative z-10 container mx-auto px-6 min-h-[calc(100vh-80px)] flex items-center">
         <div className="grid lg:grid-cols-2 gap-12 items-center w-full">
-          {/* LEFT SIDE */}
           <motion.div
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
@@ -347,13 +178,12 @@ const Hero = () => {
                 animate={{ opacity: [0.5, 1, 0.5] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
-                {'Hey, I\'m Subahan'}
+                {"Hey, I'm Subahan"}
               </motion.div>
               <GlitchText className="text-6xl md:text-8xl font-black leading-none">
                 <span
                   style={{
-                    background:
-                      'linear-gradient(135deg, #00FFFF 0%, #9FFFFF 50%, #FFFFFF 100%)',
+                    background: 'linear-gradient(135deg, #00FFFF 0%, #9FFFFF 50%, #FFFFFF 100%)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
                     backgroundClip: 'text',
@@ -383,20 +213,14 @@ const Hero = () => {
                   textShadow: '0 0 30px rgba(0, 255, 255, 0.1)',
                 }}
               >
-                MERN stack developer and CSE undergrad, building scalable web
-                apps, dashboards, and interactive experiences.
+                MERN stack developer and CSE undergrad, building scalable web apps, dashboards, and interactive experiences.
                 <br />
-                <span
-                  style={{ color: '#9FFFFF' }}
-                  className="font-light"
-                >
-                  Currently refining DSA & backend architecture while shipping
-                  real-world projects.
+                <span style={{ color: '#9FFFFF' }} className="font-light">
+                  Currently refining DSA & backend architecture while shipping real-world projects.
                 </span>
               </motion.p>
             </div>
 
-            {/* CTA BUTTONS */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -409,16 +233,12 @@ const Hero = () => {
                 style={{
                   backgroundColor: '#00FFFF',
                   color: '#0A0E1A',
-                  boxShadow:
-                    '0 4px 40px rgba(0, 255, 255, 0.5), inset 0 0 20px rgba(255, 255, 255, 0.2)',
+                  boxShadow: '0 4px 40px rgba(0, 255, 255, 0.5), inset 0 0 20px rgba(255, 255, 255, 0.2)',
                 }}
               >
                 <span className="relative z-10 flex items-center gap-2">
                   View Projects
-                  <motion.span
-                    animate={{ x: [0, 5, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  >
+                  <motion.span animate={{ x: [0, 5, 0] }} transition={{ duration: 1.5, repeat: Infinity }}>
                     →
                   </motion.span>
                 </span>
@@ -439,8 +259,7 @@ const Hero = () => {
                   borderColor: '#00FFFF',
                   color: '#00FFFF',
                   backgroundColor: 'rgba(0, 255, 255, 0.05)',
-                  boxShadow:
-                    '0 0 30px rgba(0, 255, 255, 0.2), inset 0 0 30px rgba(0, 255, 255, 0.05)',
+                  boxShadow: '0 0 30px rgba(0, 255, 255, 0.2), inset 0 0 30px rgba(0, 255, 255, 0.05)',
                 }}
               >
                 <span className="relative z-10">Get in Touch</span>
@@ -454,7 +273,6 @@ const Hero = () => {
               </MagneticButton>
             </motion.div>
 
-            {/* STATS */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -465,8 +283,7 @@ const Hero = () => {
               <div
                 className="absolute top-0 left-0 w-full h-px"
                 style={{
-                  background:
-                    'linear-gradient(to right, transparent, #00FFFF, transparent)',
+                  background: 'linear-gradient(to right, transparent, #00FFFF, transparent)',
                 }}
               />
               {[
@@ -491,10 +308,7 @@ const Hero = () => {
                   >
                     {stat.value}
                   </motion.div>
-                  <div
-                    className="text-sm font-medium tracking-wider uppercase"
-                    style={{ color: '#a0aec0' }}
-                  >
+                  <div className="text-sm font-medium tracking-wider uppercase" style={{ color: '#a0aec0' }}>
                     {stat.label}
                   </div>
                   <div
@@ -506,61 +320,148 @@ const Hero = () => {
             </motion.div>
           </motion.div>
 
-          {/* RIGHT SIDE – 3D orb */}
+          {/* ENHANCED HELMET SECTION */}
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1.2, ease: 'easeOut' }}
-            className="relative h-[500px] lg:h-[700px]"
+            transition={{ duration: 1.2, ease: "easeOut" }}
+            className="relative h-[500px] lg:h-[700px] flex items-center justify-center"
           >
-            <div className="absolute inset-0 rounded-full opacity-50 blur-3xl" style={{ background: 'radial-gradient(circle, rgba(0, 255, 255, 0.8) 0%, rgba(159, 255, 255, 0.4) 30%, transparent 70%)', animation: 'breathe 6s ease-in-out infinite' }} />
-            <div className="absolute inset-0 rounded-full opacity-30 blur-2xl" style={{ background: 'radial-gradient(circle, rgba(255, 255, 255, 0.5) 0%, transparent 50%)', animation: 'pulse 4s ease-in-out infinite' }} />
-            <Canvas camera={{ position: [0, 0, 12], fov: 50 }}>
-              <ambientLight intensity={0.4} />
-              <NeuralCoreScene mouseX={mousePos.x} mouseY={mousePos.y} />
-              <OrbitControls
-                enableZoom={false}
-                enablePan={false}
-                autoRotate
-                autoRotateSpeed={0.5}
-                minPolarAngle={Math.PI / 3}
-                maxPolarAngle={Math.PI / 1.5}
+            {/* Animated background glows */}
+            <motion.div
+              className="absolute inset-0 rounded-full blur-3xl"
+              animate={{
+                scale: [1, 1.2, 1],
+                opacity: [0.4, 0.6, 0.4],
+              }}
+              transition={{
+                duration: 6,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              style={{
+                background: "radial-gradient(circle, rgba(0, 255, 255, 0.8) 0%, rgba(159, 255, 255, 0.4) 30%, transparent 70%)",
+              }}
+            />
+            
+            <motion.div
+              className="absolute inset-0 rounded-full blur-2xl"
+              animate={{
+                scale: [1.1, 1, 1.1],
+                opacity: [0.2, 0.4, 0.2],
+              }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              style={{
+                background: "radial-gradient(circle, rgba(255, 255, 255, 0.5) 0%, transparent 50%)",
+              }}
+            />
+
+            {/* Animated Helmet */}
+            <motion.div
+              className="relative z-10"
+              animate={{
+                y: [0, -20, 0],
+                rotateY: [0, 10, 0, -10, 0],
+              }}
+              transition={{
+                y: {
+                  duration: 4,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                },
+                rotateY: {
+                  duration: 8,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }
+              }}
+              style={{
+                transform: `translate(${(mousePos.x - 0.5) * 25}px, ${(mousePos.y - 0.5) * 25}px)`,
+                transformStyle: 'preserve-3d',
+              }}
+            >
+              <motion.img
+                src="/helmet.png"
+                alt="helmet hologram"
+                className="pointer-events-none select-none max-w-[70%] mx-auto"
+                style={{
+                  filter: 'drop-shadow(0 0 60px #00FFFF) drop-shadow(0 0 30px #9FFFFF)',
+                }}
+                whileHover={{ 
+                  scale: 1.05,
+                  filter: 'drop-shadow(0 0 80px #00FFFF) drop-shadow(0 0 40px #9FFFFF)',
+                }}
               />
-            </Canvas>
+
+              {/* Energy pulses around helmet */}
+              {[...Array(3)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute inset-0 border-2 rounded-full"
+                  style={{
+                    borderColor: 'rgba(0, 255, 255, 0.3)',
+                    left: '10%',
+                    right: '10%',
+                    top: '10%',
+                    bottom: '10%',
+                  }}
+                  animate={{
+                    scale: [1, 1.5, 1],
+                    opacity: [0.5, 0, 0.5],
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    delay: i * 1,
+                    ease: "easeOut"
+                  }}
+                />
+              ))}
+            </motion.div>
+
+            {/* Floating Tech Labels with enhanced animation */}
             <div className="absolute inset-0 pointer-events-none">
               {[
-                { label: 'React', position: 'top-10 left-10', delay: 0, rotate: -5 },
-                { label: 'Node.js', position: 'top-20 right-10', delay: 0.1, rotate: 5 },
-                { label: 'MongoDB', position: 'bottom-20 left-10', delay: 0.2, rotate: 3 },
-                { label: 'Express', position: 'bottom-10 right-20', delay: 0.3, rotate: -3 },
+                { label: "React", position: "top-10 left-10", delay: 0, rotate: -5 },
+                { label: "Node.js", position: "top-20 right-10", delay: 0.1, rotate: 5 },
+                { label: "MongoDB", position: "bottom-20 left-10", delay: 0.2, rotate: 3 },
+                { label: "Express", position: "bottom-10 right-20", delay: 0.3, rotate: -3 },
               ].map((tech, i) => (
                 <motion.div
                   key={i}
-                  initial={{ opacity: 0, y: 20, rotate: 0 }}
-                  animate={{ opacity: [0.6, 1, 0.6], y: [0, -8, 0], rotate: tech.rotate }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{
+                    opacity: [0.6, 1, 0.6],
+                    y: [0, -8, 0],
+                  }}
                   transition={{
                     opacity: { duration: 3, repeat: Infinity, delay: tech.delay },
                     y: { duration: 3, repeat: Infinity, delay: tech.delay },
-                    rotate: { duration: 0.5 },
                   }}
-                  whileHover={{ scale: 1.1, opacity: 1 }}
-                  className={`absolute ${tech.position} px-4 py-2 text-sm font-bold font-mono border-2 rounded-full backdrop-blur-md cursor-pointer group`}
+                  whileHover={{ 
+                    scale: 1.15, 
+                    opacity: 1,
+                    boxShadow: '0 0 30px rgba(0, 255, 255, 0.5)',
+                  }}
+                  className={`absolute ${tech.position} px-4 py-2 text-sm font-bold font-mono border-2 rounded-full backdrop-blur-md cursor-pointer`}
                   style={{
-                    color: '#00FFFF',
-                    borderColor: 'rgba(0, 255, 255, 0.4)',
-                    backgroundColor: 'rgba(10, 14, 26, 0.9)',
-                    boxShadow:
-                      '0 0 20px rgba(0, 255, 255, 0.3), inset 0 0 10px rgba(0, 255, 255, 0.1)',
+                    color: "#00FFFF",
+                    borderColor: "rgba(0, 255, 255, 0.4)",
+                    backgroundColor: "rgba(10, 14, 26, 0.9)",
+                    boxShadow: "0 0 20px rgba(0, 255, 255, 0.3), inset 0 0 10px rgba(0, 255, 255, 0.1)",
+                    transform: `rotate(${tech.rotate}deg)`,
                   }}
                 >
-                  <span className="relative z-10">{tech.label}</span>
-                  <div
-                    className="absolute inset-0 opacity-0 group-hover:opacity-10 rounded-full transition-opacity duration-300"
-                    style={{ backgroundColor: '#00FFFF' }}
-                  />
+                  {tech.label}
                 </motion.div>
               ))}
             </div>
+
+            {/* Orbital rings */}
             <div className="absolute inset-0 pointer-events-none">
               <svg className="w-full h-full" style={{ filter: 'blur(0.5px)' }}>
                 <circle cx="50%" cy="50%" r="42%" fill="none" stroke="url(#gradient1)" strokeWidth="2" strokeDasharray="10,5" opacity="0.6">
@@ -590,16 +491,17 @@ const Hero = () => {
         </div>
       </div>
 
-      {/* bottom social icons */}
+      {/* FIXED Social icons with proper z-index and pointer-events */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.5 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-6"
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-6 z-30"
+        style={{ pointerEvents: 'auto' }}
       >
         {[
-          { icon: 'G', href: 'https://github.com/subahanmulla007', label: 'GitHub' },
-          { icon: 'L', href: 'https://www.linkedin.com/in/subahan-mulla/', label: 'LinkedIn' },
+          { icon: 'G', href: 'https://github.com/subahan00', label: 'GitHub' },
+          { icon: 'L', href: 'www.linkedin.com/in/subahan-mulla-756905262', label: 'LinkedIn' },
           { icon: '@', href: 'mailto:subahanmulla007@gmail.com', label: 'Email' },
         ].map((link, i) => (
           <motion.a
@@ -607,11 +509,12 @@ const Hero = () => {
             href={link.href}
             target={link.href.startsWith('mailto:') ? '_self' : '_blank'}
             rel="noopener noreferrer"
-            className="w-12 h-12 rounded-full border-2 flex items-center justify-center font-bold backdrop-blur-md relative overflow-hidden group"
+            className="w-12 h-12 rounded-full border-2 flex items-center justify-center font-bold backdrop-blur-md relative overflow-hidden group cursor-pointer"
             style={{
               borderColor: 'rgba(0, 255, 255, 0.4)',
               backgroundColor: 'rgba(0, 255, 255, 0.05)',
               color: '#00FFFF',
+              pointerEvents: 'auto',
             }}
             whileHover={{ scale: 1.1, y: -5 }}
             whileTap={{ scale: 0.95 }}
